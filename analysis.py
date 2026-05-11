@@ -197,7 +197,7 @@ def plot_wave_average_scores(df, divorce_col, reading_col, writing_col, wave_nam
     avg_scores = plot_df.groupby("divorce_group")[[reading_col, writing_col]].mean()
     avg_scores = avg_scores.rename(columns={
         reading_col: "Reading",
-        writing_col: "Writing"   # change to "Math" if you want the true label
+        writing_col: "Writing"  
     })
 
     ax = avg_scores.plot(kind="bar", figsize=(8, 5))
