@@ -1,15 +1,9 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 
-# ----------------------------
-# 1. Load data
-# ----------------------------
-# convert_categoricals=False keeps the raw SPSS codes
+
 df = pd.read_spss("data.sav", convert_categoricals=False)
 
-# ----------------------------
-# 2. Clean important columns
-# ----------------------------
 score_cols = [
     "X1RSCALK5", "X1MSCALK5",
     "X4RSCALK5", "X4MSCALK5",
@@ -20,14 +14,6 @@ marital_cols = ["P1CURMAR", "P4CURMAR", "P9CURMAR"]
 for col in score_cols + marital_cols:
     df[col] = pd.to_numeric(df[col], errors="coerce")
 
-# ----------------------------
-# 3. Create divorce flags
-# ----------------------------
-# In your file:
-# 3 = divorced
-# -9 = not ascertained
-# NaN = missing
-
 for col in marital_cols:
     df.loc[df[col] == -9, col] = pd.NA
 
@@ -35,20 +21,14 @@ df["divorced_p1"] = (df["P1CURMAR"] == 3).astype("float")
 df["divorced_p4"] = (df["P4CURMAR"] == 3).astype("float")
 df["divorced_p9"] = (df["P9CURMAR"] == 3).astype("float")
 
-# Set divorce flags to missing when marital status is missing
 df.loc[df["P1CURMAR"].isna(), "divorced_p1"] = pd.NA
 df.loc[df["P4CURMAR"].isna(), "divorced_p4"] = pd.NA
 df.loc[df["P9CURMAR"].isna(), "divorced_p9"] = pd.NA
 
-# ----------------------------
-# 4. Create average score variables
-# ----------------------------
 df["GRADE4_AVG"] = df[["X4RSCALK5", "X4MSCALK5"]].mean(axis=1)
 df["GRADE9_AVG"] = df[["X9RSCALK5", "X9MSCALK5"]].mean(axis=1)
 
-# ----------------------------
-# 5. Basic checks
-# ----------------------------
+
 print("\n=== Divorce group counts ===")
 print("P1:")
 print(df["divorced_p1"].value_counts(dropna=False))
@@ -60,9 +40,7 @@ print(df["divorced_p9"].value_counts(dropna=False))
 print("\n=== Missing values in score columns ===")
 print(df[score_cols].isna().sum())
 
-# ----------------------------
-# 6. Summary table for Wave 9
-# ----------------------------
+
 wave9 = df[df["divorced_p9"].isin([0, 1])].copy()
 wave9["divorce_group"] = wave9["divorced_p9"].map({0: "Not Divorced", 1: "Divorced"})
 
@@ -70,34 +48,26 @@ summary_wave9 = wave9.groupby("divorce_group")[["X9RSCALK5", "X9MSCALK5", "GRADE
 print("\n=== Wave 9 summary by divorce group ===")
 print(summary_wave9)
 
-# ----------------------------
-# 7. Graph 1: Bar chart of Wave 9 averages
-# ----------------------------
-# Keep only rows with valid wave 9 reading and math scores
 wave9_plot = wave9.dropna(subset=["X9RSCALK5", "X9MSCALK5"]).copy()
 
-# Average scores by group
+
 bar_data = wave9_plot.groupby("divorce_group")[["X9RSCALK5", "X9MSCALK5"]].mean()
 bar_data = bar_data.rename(columns={
     "X9RSCALK5": "Reading",
     "X9MSCALK5": "Math"
 })
 
-# Number of individuals in each group
 group_counts = wave9_plot.groupby("divorce_group").size()
 
-# Build x-axis labels with n counts
 label_order = list(bar_data.index)
 x_labels = [f"{group}\n(n={group_counts[group]})" for group in label_order]
 
-# Plot
 ax = bar_data.plot(kind="bar", figsize=(8, 5))
 ax.set_title("Wave 9 Average Scores by Divorce Group")
 ax.set_xlabel("Divorce Group")
 ax.set_ylabel("Average Score")
 ax.set_xticklabels(x_labels, rotation=0)
 
-# Add count labels above each group
 group_max = bar_data.max(axis=1)
 for i, group in enumerate(label_order):
     ax.text(
@@ -114,9 +84,6 @@ plt.savefig("wave9_average_scores_by_divorce_group_with_counts.png", dpi=300, bb
 plt.show()
 plt.close()
 
-# ----------------------------
-# 8. Graph 2: Boxplot of Wave 9 reading scores
-# ----------------------------
 box_reading = [
     wave9.loc[wave9["divorce_group"] == "Not Divorced", "X9RSCALK5"].dropna(),
     wave9.loc[wave9["divorce_group"] == "Divorced", "X9RSCALK5"].dropna()
@@ -132,9 +99,6 @@ plt.savefig("wave9_reading_boxplot_by_divorce_group.png", dpi=300, bbox_inches="
 plt.show()
 plt.close()
 
-# ----------------------------
-# 9. Graph 3: Boxplot of Wave 9 math scores
-# ----------------------------
 box_math = [
     wave9.loc[wave9["divorce_group"] == "Not Divorced", "X9MSCALK5"].dropna(),
     wave9.loc[wave9["divorce_group"] == "Divorced", "X9MSCALK5"].dropna()
@@ -150,16 +114,12 @@ plt.savefig("wave9_math_boxplot_by_divorce_group.png", dpi=300, bbox_inches="tig
 plt.show()
 plt.close()
 
-# ----------------------------
-# 10. Graph 4: Line graph from Wave 4 to Wave 9
-# ----------------------------
 line_data = df[df["divorced_p9"].isin([0, 1])].copy()
 line_data["divorce_group"] = line_data["divorced_p9"].map({0: "Not Divorced", 1: "Divorced"})
 
 reading_line = line_data.groupby("divorce_group")[["X4RSCALK5", "X9RSCALK5"]].mean()
 math_line = line_data.groupby("divorce_group")[["X4MSCALK5", "X9MSCALK5"]].mean()
 
-# Reading line graph
 plt.figure(figsize=(8, 5))
 for group in reading_line.index:
     plt.plot(["Wave 4", "Wave 9"], reading_line.loc[group], marker="o", label=group)
@@ -173,7 +133,6 @@ plt.savefig("reading_scores_over_time_by_divorce_group.png", dpi=300, bbox_inche
 plt.show()
 plt.close()
 
-# Math line graph
 plt.figure(figsize=(8, 5))
 for group in math_line.index:
     plt.plot(["Wave 4", "Wave 9"], math_line.loc[group], marker="o", label=group)
@@ -187,9 +146,6 @@ plt.savefig("math_scores_over_time_by_divorce_group.png", dpi=300, bbox_inches="
 plt.show()
 plt.close()
 
-# ----------------------------
-# 11. Optional: timing of divorce
-# ----------------------------
 def timing_group(row):
     p1 = row["P1CURMAR"]
     p4 = row["P4CURMAR"]
