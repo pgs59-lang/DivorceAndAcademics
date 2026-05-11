@@ -1,17 +1,14 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 
-# Load data
 df = pd.read_spss("data.sav", convert_categoricals=False)
 
-# Clean columns
 cols = ["P9CURMAR", "X9RSCALK5", "X9MSCALK5"]
 for col in cols:
     df[col] = pd.to_numeric(df[col], errors="coerce")
 
 df.loc[df["P9CURMAR"] == -9, "P9CURMAR"] = pd.NA
 
-# Counts after each filter
 total_n = len(df)
 
 step1_df = df[df["P9CURMAR"].notna()]
